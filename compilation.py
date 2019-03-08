@@ -1,0 +1,16 @@
+import sys
+import rev_script
+
+if len(sys.argv)<3:
+    print("<something.csv> <tree/bayes/bootstrap>")
+    exit(1)
+
+if (sys.argv[2]=='tree'):
+    rev_script.tree(sys.argv[1])
+elif (sys.argv[2]=='bayes'):
+    rev_script.pdf(sys.argv[1])
+elif (sys.argv[2]=='bootstrap'):
+    rev_script.bootstrap(sys.argv[1])
+elif (sys.argv[2]=='accuracy'):
+    rev_script.accuracy(sys.argv[1])
+
