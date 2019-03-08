@@ -88,7 +88,7 @@ def prediction(leaf_labels):
         result[label] = count
 
     for label, val in result.items():
-        result[label] = str(int(result[label]/total * 100))+"%"
+        result[label] = str(round((result[label]/total * 100),2))+"%"
 
     return result
 
@@ -216,3 +216,22 @@ def printtree(tree, current_branch, attributes=None,  indent='', leaff=predictio
         indent = indent + '  '
         printtree(tree.tb, 'T->', attributes, indent)
         printtree(tree.fb, 'F->', attributes, indent)
+
+def test_classify(tree, test_set):
+    results = []
+    for row in test_set:
+        yes=0
+        no=0
+        result = classify(row, tree)
+        if '1' in result:
+            yes=float(result['1'].strip('%'))
+        if '0' in result:
+            no=float(result['0'].strip('%'))
+        #if (yes>no):
+         #   d_tree_p.append([yes,no])
+        if (yes>no):
+            results.append(yes)
+        else:
+            results.append(0)
+
+    return results
