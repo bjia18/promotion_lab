@@ -229,9 +229,6 @@ def test_classify(tree, test_set):
             no=float(result['0'].strip('%'))
         #if (yes>no):
          #   d_tree_p.append([yes,no])
-        if (yes>no):
-            results.append(yes)
-        else:
-            results.append(0)
+        results.append(yes)
 
     return results

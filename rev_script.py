@@ -29,7 +29,7 @@ bins = {"TOTAL_VISITS": [1, 2, 5, 10, 20], "TOTAL_SPENT": [0, 100, 400, 1000, 20
 
 def main():
     if len(sys.argv) < 2:  # input file name should be specified
-        print ("Please specify input csv file name")
+        print ("Please specify input csv file name for preprocessing")
         return
 
     global attributes
@@ -98,12 +98,36 @@ def main():
                     data[m][n]='Y'
     
    # print(data)
-    f_name='discretized_data.csv'
-    with open(f_name,'w') as csvfile:
+    train_set=[]
+    test_set=[]
+    size=len(data)
+    for i in range(size):
+        train_set.append([])
+
+    for i in range(size):
+        train_set[i]=data[random.randint(0,size-1)]
+    
+    for i in range(size):
+        repeat=False
+        for j in range(size):
+            if (data[i]==train_set[j]):
+                repeat=True
+                break
+        if repeat==False:
+            test_set.append(data[i])
+
+    with open('train_set.csv','w') as csvfile:
         writer=csv.writer(csvfile, delimiter=',',lineterminator='\n')
         writer.writerow(col_names)
-        for i in data:
+        for i in train_set:
             writer.writerow(i)
+    
+    with open('test_set.csv','w') as csvfile:
+        writer=csv.writer(csvfile, delimiter=',',lineterminator='\n')
+        writer.writerow(col_names)
+        for i in test_set:
+            writer.writerow(i)
+    
 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
@@ -117,7 +141,7 @@ def pdf(f_name):
     global attributes
     naive_pdf.build(f_name, attributes)
 
-def bootstrap(f_name):
+'''def bootstrap(f_name):
     global attributes
     data=[]
     new=[]
@@ -145,64 +169,97 @@ def bootstrap(f_name):
     with open('test_dataset.csv','w') as csvfile:
         writer=csv.writer(csvfile, delimiter=',',lineterminator='\n')
         for i in new:
-            writer.writerow(i)
+            writer.writerow(i)'''
     
-def accuracy(f_name):
+def accuracy():
     global attributes
     total=0
     labels=True
-    data=[]
-    d_tree_p=[]
-    n_bayes_p=[]
-    real=[]
+    train_data=[]
+    test_data=[]
+
+    dtree_train=[]
+    dtree_test=[]
+
+    nbayes_train=[]
+    nbayes_test=[]
+    real_train=[]
+    real_test=[]
     
-    with open('test_dataset.csv') as csvfile:
+    with open('test_set.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             if labels:
                 col_names=row
                 labels=False
             else:
-                real.append(int(row[-1]))
+                real_test.append(int(row[-1]))
                 op=list(row)
                 for i in range(len(op)):
                     if attributes[col_names[i]][0]=='n':
                         op[i]=float(op[i])
-                data.append(op)
+                test_data.append(op)
                 total+=1
     
-    pdf(f_name) 
-    n_bayes_p=naive_pdf.classifier(data)
-    tree=tree_test.build(f_name, attributes)
+    pdf('train_set.csv') 
+    tree=tree_test.build('train_set.csv', attributes)
     print("tree built")
-    # save the classifier
-    d_tree_p=dtree_build.test_classify(tree, data) 
+   
+    labels=True
+    with open('train_set.csv') as csvfile:
+        readCSV = csv.reader(csvfile, delimiter=',')
+        for row in readCSV:
+            if labels:
+                labels=False
+            else:
+                real_train.append(int(row[-1]))
+                op=list(row)
+                for i in range(len(op)):
+                    if attributes[col_names[i]][0]=='n':
+                        op[i]=float(op[i])
+                train_data.append(op)
+    
+    nbayes_train=naive_pdf.classifier(train_data)
+    nbayes_test=naive_pdf.classifier(test_data)
+    
+    dtree_train=dtree_build.test_classify(tree, train_data)
+    dtree_test=dtree_build.test_classify(tree, test_data)
     print("tree results")
-    d_percent=0
-    n_percent=0
+    
+    dpercent_train=0
+    dpercent_test=0
+    npercent_train=0
+    npercent_test=0
+
     lift=[[],[],[],[],[]] # [letters][rand_pos][confidence][actual positives]
     count=0
-    for i in range(total):
+    for i in range(len(test_data)):
         count+=1
         pos=0
         rand_pos=0
-        if real[i]==1:
+        if real_test[i]==1:
             rand_pos=1
         #if (real[i]==1 and d_tree_p[i]==real[i]):
-        if ((d_tree_p[i]>real[i] and real[i]==1) or (real[i]==0 and d_tree_p[i]==0)):    
-            d_percent+=1
+        if ((dtree_test[i]>50 and real_test[i]==1) or (real_test[i]==0 and dtree_test[i]<50)):    
+            dpercent_test+=1
         #if (real[i]==1 and n_bayes_p[i]==real[i]):
-        if (n_bayes_p[i]==real[i]):
-            n_percent+=1
-        if (i<2000):
-            lift[0].append(count)
-            lift[1].append(rand_pos)
+        if (nbayes_test[i]==real_test[i]):
+            npercent_test+=1
+        lift[0].append(count)
+        lift[1].append(rand_pos)
 
-        if (d_tree_p[i]>0):
-            if (real[i]==1):
-                pos=1
-            lift[2].append(d_tree_p[i])
-            lift[3].append(pos)
+        if (real_test[i]==1):
+            pos=1
+        lift[3].append(dtree_test[i])
+        lift[4].append(pos)
+    
+    for i in range(total):
+        #if (real[i]==1 and d_tree_p[i]==real[i]):
+        if ((dtree_train[i]>50 and real_train[i]==1) or (real_train[i]==0 and dtree_train[i]<50)):
+            dpercent_train+=1
+        #if (real[i]==1 and n_bayes_p[i]==real[i]):
+        if (nbayes_train[i]==real_train[i]):
+            npercent_train+=1
      
     #lift.sort(key=compare, reverse=True)
     #d_tree_p.sort(key=compare, reverse=True)
@@ -220,7 +277,9 @@ def accuracy(f_name):
         writer=csv.writer(csvfile, delimiter=',',lineterminator='\n')
         for i in lift:
             writer.writerow(i)
-
+    
+    d_percent=dpercent_train*0.368+dpercent_test*0.632
+    n_percent=npercent_train*0.368+dpercent_test*0.632
     #print(n_percent) 
     d_percent/=total
     n_percent/=total
